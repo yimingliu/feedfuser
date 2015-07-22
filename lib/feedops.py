@@ -4,6 +4,9 @@ import feedparser
 import collections
 import concurrent.futures
 
+def mp_fetch(source):
+    return source.fetch()
+
 class FusedFeed(object):
 
     def __init__(self, name, sources, filters=None):
@@ -28,9 +31,9 @@ class FusedFeed(object):
 
     def fetch(self, max_workers=5):
         feeds = []
-        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
             # Start the load operations and mark each future with its URL
-            future_feed = {executor.submit(source.fetch): source for source in self.sources}
+            future_feed = {executor.submit(mp_fetch, source): source for source in self.sources}
             for future in concurrent.futures.as_completed(future_feed):
                 old_feed = future_feed[future]
                 try:
@@ -39,6 +42,7 @@ class FusedFeed(object):
                     print('%r generated an exception: %s' % (old_feed.uri, exc))
                 else:
                     feeds.append(new_feed)
+            self.sources = feeds
                 # try:
                 #     data = future.result()
                 # except Exception as exc:
@@ -48,7 +52,7 @@ class FusedFeed(object):
         # for source in self.sources:
         #     feeds.append(source.fetch())
         #
-        return feeds
+        return self
 
 
 class SourceFeed(object):

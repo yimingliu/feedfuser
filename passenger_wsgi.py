@@ -1,0 +1,1 @@
+from feedfuser import app as application

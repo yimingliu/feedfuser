@@ -1,0 +1,24 @@
+{
+    "name":"Language Log without Victor Mair",
+    "sources":
+    [
+      {
+        "uri":"http://languagelog.ldc.upenn.edu/nll/?feed=atom",
+        "filters":[
+          {
+            "mode":"OR",
+            "type":"block",
+            "rules":[
+              {
+                "op":"contains",
+                "field":"author",
+                "value":"Victor Mair"
+              }
+            ]
+          }
+        ]
+      }
+
+    ]
+
+}

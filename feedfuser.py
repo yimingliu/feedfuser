@@ -5,20 +5,23 @@ from werkzeug.contrib.atom import AtomFeed
 from lib import feedops
 
 app = Flask(__name__, static_folder="public")
-APP_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # refers to application_top
+APP_ROOT = os.path.dirname(os.path.abspath(__file__))   # refers to application_top
 APP_STATIC = os.path.join(APP_ROOT, 'public')
 APP_CONFIG = os.path.join(APP_ROOT, 'config')
 APP_CONFIG_FEEDS = os.path.join(APP_ROOT, 'config', 'feeds')
+
 
 @app.route('/')
 def hello_world():
     return 'Hello World!'
 
+
 @app.route('/feeds/<feed_id>')
 def get_feed(feed_id):
     feed_id = secure_filename(feed_id)
-    feed_config_filepath = os.path.join(APP_CONFIG_FEEDS, feed_id)
+    feed_config_filepath = os.path.join(APP_CONFIG_FEEDS, feed_id+".json")
     if not os.path.isfile(feed_config_filepath):
+        print feed_config_filepath
         abort(404)
     feed = feedops.FusedFeed.load_from_spec_file(feed_config_filepath)
     feed.fetch()

@@ -4,8 +4,10 @@ import feedparser
 import collections
 import concurrent.futures
 
+
 def mp_fetch(source):
     return source.fetch()
+
 
 class FusedFeed(object):
 

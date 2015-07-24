@@ -1,13 +1,14 @@
-import json
+import json, itertools, collections, datetime
+import concurrent.futures
 import requests
 import feedparser
-import collections
-import concurrent.futures
 
 
 def mp_fetch(source):
     return source.fetch()
 
+def tm_struct_to_datetime(t):
+    return datetime.datetime(*t[:5]+(min(t[5], 59),)) # this is a hack to convert leap seconds into 59th second instead
 
 class FusedFeed(object):
 
@@ -56,6 +57,11 @@ class FusedFeed(object):
         #
         return self
 
+    @property
+    def entries(self):
+        combined = [source.entries for source in self.sources]
+        return list(itertools.chain.from_iterable(combined))
+
 
 class SourceFeed(object):
 
@@ -66,6 +72,7 @@ class SourceFeed(object):
         self.headers = kwargs.get("headers")
         self.filters = kwargs.get("filters", [])
         self.parsed = None
+        self.entries = []
 
     def __repr__(self):
         return '%s(uri="%s")' % (self.__class__.__name__, self.uri.encode('utf-8'))
@@ -88,6 +95,7 @@ class SourceFeed(object):
 
     def fetch(self, timeout=10):
         self.parsed = None
+        self.entries = []
         args = {'timeout':timeout}
         if self.username and self.password:
             args['auth'] = (self.username, self.password)
@@ -102,10 +110,49 @@ class SourceFeed(object):
         if not parsed_feed:
             return None
         self.parsed = parsed_feed
+        for entry in self.parsed.entries:
+            feed_item = FeedEntry.create_from_parsed_entry(entry)
+            self.entries.append(feed_item)
         if self.filters:
             #TODO: apply filters to the feed
             pass
         return self
+
+
+class FeedEntry(object):
+
+    def __init__(self, **kwargs):
+        self.guid = kwargs.get("guid")
+        self.title = kwargs.get("title")
+        self.author = kwargs.get("author")
+        self.summary_type = kwargs.get("summary_type")
+        self.summary = kwargs.get("summary")
+        self.content_type = kwargs.get("content_type")
+        self.content = kwargs.get("content")
+        self.link = kwargs.get("link")
+        self.pub_date = kwargs.get("pub_date")
+        self.update_date = kwargs.get("update_date")
+
+    @classmethod
+    def create_from_parsed_entry(cls, entry):
+        item = cls(guid=entry.guid, title=entry.get("title"), author=entry.get("author"), link=entry.get("link")
+                )
+        item.pub_date = entry.get("published_parsed")
+        if item.pub_date:
+            item.pub_date = tm_struct_to_datetime(item.pub_date)
+            datetime.datetime(2009, 11, 8, 20, 32, 35)
+        item.update_date = entry.get("updated_parsed")
+        if item.update_date:
+            item.update_date = tm_struct_to_datetime(item.update_date)
+        if entry.get("summary_detail"):
+            item.summary_type = entry.summary_detail.type
+            item.summary = entry.summary
+        if entry.get("content_detail"):
+            item.content_type = entry.content_detail.type
+            item.content = entry.content
+        return item
+
+
 
 
 class FeedFilter(object):

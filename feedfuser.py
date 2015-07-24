@@ -1,7 +1,7 @@
-from flask import Flask, abort
+from flask import Flask, request, abort
 import os, os.path
 from werkzeug.utils import secure_filename
-from werkzeug.contrib.atom import AtomFeed
+from werkzeug.contrib.atom import AtomFeed, FeedEntry
 from lib import feedops
 
 app = Flask(__name__, static_folder="public")
@@ -13,7 +13,7 @@ APP_CONFIG_FEEDS = os.path.join(APP_ROOT, 'config', 'feeds')
 
 @app.route('/')
 def hello_world():
-    return 'Hello World!'
+    return 'Are we still in Kansas, Toto?'
 
 
 @app.route('/feeds/<feed_id>')
@@ -25,20 +25,19 @@ def get_feed(feed_id):
         abort(404)
     feed = feedops.FusedFeed.load_from_spec_file(feed_config_filepath)
     feed.fetch()
-    return str(feed.sources)
+    output = AtomFeed(feed.name, feed_url=request.url, url=request.url_root, author="FeedFuser")
+    for entry in feed.entries:
+        feed_item = FeedEntry(id=entry.guid, title=entry.title, url=entry.link, updated=entry.update_date,
+                              author=entry.author, published=entry.pub_date)
+        if entry.summary:
+            feed_item.summary = unicode(entry.summary)
+            feed_item.summary_type = "text" if entry.summary_type == "text/plain" else "html"
+        if entry.content:
+            feed_item.content = unicode(entry.content)
+            feed_item.content_type = "text" if entry.content_type == "text/plain" else "html"
+        output.add(feed_item)
+    return output.get_response()
+    # return str(feed.sources)
 
 if __name__ == '__main__':
-    app.run()
-
-#feed = AtomFeed('Recent Articles',
-#                     feed_url=request.url, url=request.url_root)
-# articles = Article.query.order_by(Article.pub_date.desc()) \
-#     .limit(15).all()
-# for article in articles:
-#     feed.add(article.title, unicode(article.rendered_text),
-#              content_type='html',
-#              author=article.author.name,
-#              url=make_external(article.url),
-#              updated=article.last_update,
-#              published=article.published)
-# return feed.get_response()
+    app.run(debug=True)

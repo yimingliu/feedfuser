@@ -7,8 +7,10 @@ import feedparser
 def mp_fetch(source):
     return source.fetch()
 
+
 def tm_struct_to_datetime(t):
-    return datetime.datetime(*t[:5]+(min(t[5], 59),)) # this is a hack to convert leap seconds into 59th second instead
+    return datetime.datetime(*t[:5]+(min(t[5], 59),))  # this is a hack to convert leap seconds into 59th second instead
+
 
 class FusedFeed(object):
 
@@ -30,7 +32,7 @@ class FusedFeed(object):
         if sources:
             sources = SourceFeed.load_from_list(sources)
         filters = data.get('filters')
-        return cls(name=name, sources=sources,filters=filters)
+        return cls(name=name, sources=sources, filters=filters)
 
     def fetch(self, max_workers=5):
         feeds = []
@@ -46,15 +48,6 @@ class FusedFeed(object):
                 else:
                     feeds.append(new_feed)
             self.sources = feeds
-                # try:
-                #     data = future.result()
-                # except Exception as exc:
-                #     print('%r generated an exception: %s' % (url, exc))
-                # else:
-                #     print('%r page is %d bytes' % (url, len(data)))
-        # for source in self.sources:
-        #     feeds.append(source.fetch())
-        #
         return self
 
     @property
@@ -96,7 +89,7 @@ class SourceFeed(object):
     def fetch(self, timeout=10):
         self.parsed = None
         self.entries = []
-        args = {'timeout':timeout}
+        args = {'timeout': timeout}
         if self.username and self.password:
             args['auth'] = (self.username, self.password)
         if self.headers:
@@ -114,7 +107,7 @@ class SourceFeed(object):
             feed_item = FeedEntry.create_from_parsed_entry(entry)
             self.entries.append(feed_item)
         if self.filters:
-            #TODO: apply filters to the feed
+            # TODO: apply filters to the feed
             pass
         return self
 
@@ -135,8 +128,7 @@ class FeedEntry(object):
 
     @classmethod
     def create_from_parsed_entry(cls, entry):
-        item = cls(guid=entry.guid, title=entry.get("title"), author=entry.get("author"), link=entry.get("link")
-                )
+        item = cls(guid=entry.guid, title=entry.get("title"), author=entry.get("author"), link=entry.get("link"))
         item.pub_date = entry.get("published_parsed")
         if item.pub_date:
             item.pub_date = tm_struct_to_datetime(item.pub_date)
@@ -153,8 +145,6 @@ class FeedEntry(object):
         return item
 
 
-
-
 class FeedFilter(object):
 
     def __init__(self, mode, filter_type, rules):
@@ -163,7 +153,9 @@ class FeedFilter(object):
         self.rules = rules
 
     def __repr__(self):
-        return '%s(mode="%s", filter_type="%s")' % (self.__class__.__name__, self.mode.encode('utf-8'), self.filter_type.encode('utf-8'))
+        return '%s(mode="%s", filter_type="%s")' % (self.__class__.__name__,
+                                                    self.mode.encode('utf-8'),
+                                                    self.filter_type.encode('utf-8'))
 
     @classmethod
     def load_from_list(cls, lst):
@@ -186,7 +178,10 @@ class FeedFilterRule(object):
         self.value = value
 
     def __repr__(self):
-        return '%s(op="%s", field="%s", value="%s")' % (self.__class__.__name__, self.op.encode('utf-8'), self.field.encode('utf-8'), self.value.encode('utf-8'))
+        return '%s(op="%s", field="%s", value="%s")' % (self.__class__.__name__,
+                                                        self.op.encode('utf-8'),
+                                                        self.field.encode('utf-8'),
+                                                        self.value.encode('utf-8'))
 
     @classmethod
     def load_from_list(cls, lst):

@@ -53,8 +53,9 @@ class FusedFeed(object):
     @property
     def entries(self):
         combined = [source.entries for source in self.sources]
-        return list(itertools.chain.from_iterable(combined))
-
+        entries = list(itertools.chain.from_iterable(combined))
+        entries.sort(key=lambda entry: entry.update_date, reverse=True)
+        return entries
 
 class SourceFeed(object):
 
@@ -132,10 +133,11 @@ class FeedEntry(object):
         item.pub_date = entry.get("published_parsed")
         if item.pub_date:
             item.pub_date = tm_struct_to_datetime(item.pub_date)
-            datetime.datetime(2009, 11, 8, 20, 32, 35)
         item.update_date = entry.get("updated_parsed")
         if item.update_date:
             item.update_date = tm_struct_to_datetime(item.update_date)
+        if not item.update_date:
+            item.update_date = datetime.datetime.now()
         if entry.get("summary_detail"):
             item.summary_type = entry.summary_detail.type
             item.summary = entry.summary

@@ -110,7 +110,6 @@ class SourceFeed(object):
             self.entries.append(feed_item)
         if self.filters:
             for fil in self.filters:
-        #        print fil
                 self.entries = fil.apply(self.entries)
         return self
 
@@ -193,14 +192,12 @@ class FeedFilterBlock(FeedFilter):
         super(FeedFilterBlock, self).__init__(filter_type="block", mode=mode, rules=rules)
 
     def apply(self, entries):
-        print "got to here"
         results = []
         for entry in entries:
             if self.mode.lower() == "or":  # if an entry matches any of the rules, exclude it
                 for rule in self.rules:
                     if rule.apply(entry):
                         # one of the rules matched -- exclude it
-                        print "matched", entry
                         break
                 else:
                     results.append(entry)
@@ -210,7 +207,6 @@ class FeedFilterBlock(FeedFilter):
                         # one of the rules didn't match -- should not be excluded
                         results.append(entry)
                         break
-        print results
         return results
 
 
@@ -256,7 +252,6 @@ class FeedFilterRuleContains(FeedFilterRule):
         super(FeedFilterRuleContains, self).__init__(op="contains", field=field, value=value)
 
     def apply(self, entry):
-        print self.field, self.value
         if hasattr(entry, self.field) and self.value:
             text = getattr(entry, self.field)
             if text.find(self.value) != -1:

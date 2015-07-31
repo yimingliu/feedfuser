@@ -57,6 +57,7 @@ class FusedFeed(object):
         entries.sort(key=lambda entry: entry.update_date, reverse=True)
         return entries
 
+
 class SourceFeed(object):
 
     def __init__(self, uri, **kwargs):
@@ -108,8 +109,9 @@ class SourceFeed(object):
             feed_item = FeedEntry.create_from_parsed_entry(entry)
             self.entries.append(feed_item)
         if self.filters:
-            # TODO: apply filters to the feed
-            pass
+            for fil in self.filters:
+        #        print fil
+                self.entries = fil.apply(self.entries)
         return self
 
 
@@ -127,6 +129,9 @@ class FeedEntry(object):
         self.pub_date = kwargs.get("pub_date")
         self.update_date = kwargs.get("update_date")
 
+    def __repr__(self):
+        return "<FeedEntry author='%s'>" % (self.author.encode('utf-8'))
+
     @classmethod
     def create_from_parsed_entry(cls, entry):
         item = cls(guid=entry.guid, title=entry.get("title"), author=entry.get("author"), link=entry.get("link"))
@@ -141,9 +146,9 @@ class FeedEntry(object):
         if entry.get("summary_detail"):
             item.summary_type = entry.summary_detail.type
             item.summary = entry.summary
-        if entry.get("content_detail"):
-            item.content_type = entry.content_detail.type
-            item.content = entry.content
+        if entry.get("content"):
+            item.content_type = entry.content[0].type
+            item.content = entry.content[0].value
         return item
 
 
@@ -169,7 +174,44 @@ class FeedFilter(object):
         mode = item.get("mode")
         filter_type = item.get("type")
         rules = FeedFilterRule.load_from_list(item.get("rules"))
-        return FeedFilter(mode=mode, filter_type=filter_type, rules=rules)
+        return FeedFilter.make_filter(mode=mode, filter_type=filter_type, rules=rules)
+
+    @classmethod
+    def make_filter(cls, filter_type, mode, rules):
+        if filter_type == "block":
+            return FeedFilterBlock(mode=mode, rules=rules)
+        else:
+            return FeedFilter(mode=mode, filter_type=filter_type, rules=rules)
+
+    def apply(self, entries):
+        return entries
+
+
+class FeedFilterBlock(FeedFilter):
+
+    def __init__(self, mode, rules):
+        super(FeedFilterBlock, self).__init__(filter_type="block", mode=mode, rules=rules)
+
+    def apply(self, entries):
+        print "got to here"
+        results = []
+        for entry in entries:
+            if self.mode.lower() == "or":  # if an entry matches any of the rules, exclude it
+                for rule in self.rules:
+                    if rule.apply(entry):
+                        # one of the rules matched -- exclude it
+                        print "matched", entry
+                        break
+                else:
+                    results.append(entry)
+            elif self.mode.lower() == "and":  # entry must match against all rules to be excluded
+                for rule in self.rules:
+                    if not rule.apply(entry):
+                        # one of the rules didn't match -- should not be excluded
+                        results.append(entry)
+                        break
+        print results
+        return results
 
 
 class FeedFilterRule(object):
@@ -195,4 +237,29 @@ class FeedFilterRule(object):
         op = item.get("op")
         field = item.get("field")
         value = item.get("value")
-        return FeedFilterRule(op=op, field=field, value=value)
+        return FeedFilterRule.make_rule(op=op, field=field, value=value)
+
+    @classmethod
+    def make_rule(cls, op, field, value):
+        if op.lower() == "contains":
+            return FeedFilterRuleContains(field=field, value=value)
+        else:
+            return FeedFilterRule(op=op, field=field, value=value)
+
+    def apply(self, entry):
+        return False
+
+
+class FeedFilterRuleContains(FeedFilterRule):
+
+    def __init__(self, field, value):
+        super(FeedFilterRuleContains, self).__init__(op="contains", field=field, value=value)
+
+    def apply(self, entry):
+        print self.field, self.value
+        if hasattr(entry, self.field) and self.value:
+            text = getattr(entry, self.field)
+            if text.find(self.value) != -1:
+                return True
+        return False
+

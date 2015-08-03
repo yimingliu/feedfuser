@@ -27,8 +27,8 @@ def get_feed(feed_id):
     feed.fetch()
     output = AtomFeed(feed.name, feed_url=request.url, url=request.url_root, author="FeedFuser")
     for entry in feed.entries:
-        feed_item = FeedEntry(id=entry.guid, title=entry.title, url=entry.link, updated=entry.update_date,
-                              author=entry.author, published=entry.pub_date)
+        feed_item = FeedEntry(id=entry.guid, title=entry.title, updated=entry.update_date,
+                              author=entry.author, published=entry.pub_date, links=[{"href":entry.link, "rel":"alternate", "type":"text/html"}])
         if entry.summary:
             feed_item.summary = unicode(entry.summary)
             feed_item.summary_type = "text" if entry.summary_type == "text/plain" else "html"

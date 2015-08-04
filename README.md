@@ -1,6 +1,6 @@
-feedfuser is a Flask-based Python feed server that enables various ways of ingesting, combining, filtering, munging, and re-outputting of RSS and Atom feeds.
+*feedfuser* is a Python feed server that enables various ways of ingesting, combining, filtering, munging, and re-outputting of RSS and Atom feeds.
 
-Currently, this includes the use cases of:
+Currently, this only includes the use cases of:
 
 *  concatenating multiple RSS and Atom feeds, sorting all of the entries together reverse-chronologically, and outputting common-denominator elements as a combined Atom feed
 *  filtering away certain entries based on text within entry fields, such as the name of an entry's author

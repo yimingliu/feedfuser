@@ -25,9 +25,9 @@ def get_feed(feed_id):
         abort(404)
     feed = feedops.FusedFeed.load_from_spec_file(feed_config_filepath)
     feed.fetch()
-    output = AtomFeed(feed.name, feed_url=request.url, author="FeedFuser", links={"href":request.url_root,
+    output = AtomFeed(feed.name, feed_url=request.url, author="FeedFuser", links=[{"href":request.url_root,
                                                                                   "rel":"alternate",
-                                                                                  "type":"text/html"})
+                                                                                  "type":"text/html"}])
     for entry in feed.entries:
         feed_item = FeedEntry(id=entry.guid, title=entry.title, updated=entry.update_date,
                               author=entry.author, published=entry.pub_date, links=[{"href":entry.link, "rel":"alternate", "type":"text/html"}])

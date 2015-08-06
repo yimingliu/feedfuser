@@ -25,7 +25,13 @@ def get_feed(feed_id):
         abort(404)
     feed = feedops.FusedFeed.load_from_spec_file(feed_config_filepath)
     feed.fetch()
-    output = AtomFeed(feed.name, feed_url=request.url, author="FeedFuser", links=[{"href":request.url_root,
+    feed_uri = request.url_root
+    if len(feed.sources) == 1:
+        # if there is only 1 source in a fusedfeed
+        # just give the feed's html alternate
+        # TODO: instead, we should generate our own HTML representation
+        feed_uri = feed.sources[0].html_uri
+    output = AtomFeed(feed.name, feed_url=request.url, author="FeedFuser", links=[{"href":feed_uri,
                                                                                   "rel":"alternate",
                                                                                   "type":"text/html"}])
     for entry in feed.entries:

@@ -62,6 +62,7 @@ class SourceFeed(object):
 
     def __init__(self, uri, **kwargs):
         self.uri = uri
+        self.html_uri = kwargs.get("html_uri")
         self.username = kwargs.get("username")
         self.password = kwargs.get("password")
         self.headers = kwargs.get("headers")
@@ -105,6 +106,7 @@ class SourceFeed(object):
         if not parsed_feed:
             return None
         self.parsed = parsed_feed
+        self.html_uri = parsed_feed.feed.link
         for entry in self.parsed.entries:
             feed_item = FeedEntry.create_from_parsed_entry(entry)
             self.entries.append(feed_item)

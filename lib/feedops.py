@@ -5,6 +5,7 @@ import feedparser
 
 
 def mp_fetch(source):
+    # wrapper: multiprocessing does not like classes and class methods. top-level only
     return source.fetch()
 
 
@@ -37,7 +38,6 @@ class FusedFeed(object):
     def fetch(self, max_workers=5):
         feeds = []
         with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-            # Start the load operations and mark each future with its URL
             future_feed = {executor.submit(mp_fetch, source): source for source in self.sources}
             for future in concurrent.futures.as_completed(future_feed):
                 old_feed = future_feed[future]

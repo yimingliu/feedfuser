@@ -39,14 +39,15 @@ class FusedFeed(object):
         feeds = []
         with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
             future_feed = {executor.submit(mp_fetch, source): source for source in self.sources}
-            for future in concurrent.futures.as_completed(future_feed):
+            for future in concurrent.futures.as_completed(future_feed, timeout=10):
                 old_feed = future_feed[future]
                 try:
                     new_feed = future.result()
                 except Exception as exc:
                     print('%r generated an exception: %s' % (old_feed.uri, exc))
                 else:
-                    feeds.append(new_feed)
+                    if new_feed:
+                        feeds.append(new_feed)
             self.sources = feeds
         return self
 
@@ -57,6 +58,10 @@ class FusedFeed(object):
         entries.sort(key=lambda entry: entry.update_date, reverse=True)
         return entries
 
+    @property
+    def cache_info(self):
+        return {feed.uri:{'etag':feed.etag, 'last-modified':feed.last_modified} for feed in self.sources}
+
 
 class SourceFeed(object):
 
@@ -65,10 +70,13 @@ class SourceFeed(object):
         self.html_uri = kwargs.get("html_uri")
         self.username = kwargs.get("username")
         self.password = kwargs.get("password")
-        self.headers = kwargs.get("headers")
+        self.headers = kwargs.get("headers", {})
         self.filters = kwargs.get("filters", [])
         self.parsed = None
         self.entries = []
+        self.etag = None
+        self.last_modified = None
+        self.raw = None
 
     def __repr__(self):
         return '%s(uri="%s")' % (self.__class__.__name__, self.uri.encode('utf-8'))
@@ -95,19 +103,46 @@ class SourceFeed(object):
         args = {'timeout': timeout}
         if self.username and self.password:
             args['auth'] = (self.username, self.password)
-        if self.headers:
-            args['headers'] = self.headers
+        args['headers'] = self.headers
+        if self.etag:
+            args['headers']['If-None-Match'] = self.etag
+        if self.last_modified:
+            args['headers']['If-Modified-Since'] = self.last_modified
         try:
+            #print args
             r = requests.get(self.uri, **args)
+            #print r.request.headers
         except requests.exceptions.Timeout:
             return None
-        if r.text:
-            parsed_feed = feedparser.parse(r.text)
-        if not parsed_feed:
+        print "status", r.status_code
+        if 300 > r.status_code >= 200:
+            print r.headers.get("etag")
+            if r.text:
+                parsed_feed = feedparser.parse(r.text)
+                self.raw = r.text
+            if not parsed_feed or parsed_feed.get("bozo_exception"):
+                # can't parse whatever text is available, return nothing.
+                print "Failed to parse feed.  Returning nothing"
+                return None
+        elif r.status_code == 304:
+            if self.raw:
+                # assume that if we already have text that this is reusing a cached object; just reparse the old text
+                parsed_feed = feedparser.parse(self.raw)
+            else:
+                # we don't have cached text and the server 304s.  We shouldn't have used the ETag/Last-Modified; return with nothing
+                print "returning fail"
+                return None
+        else:
+            print "utter fail"
+            # a 400+ code (or a 30x redirect, which shouldn't happen)
             return None
-        self.parsed = parsed_feed
+        if r.headers.get('etag'):
+            self.etag = r.headers.get('etag') # overwrite the old cache data with the new ones
+        if r.headers.get("last-modified"):
+            self.last_modified = r.headers.get("last-modified")
+        #self.parsed = parsed_feed
         self.html_uri = parsed_feed.feed.link
-        for entry in self.parsed.entries:
+        for entry in parsed_feed.entries:
             feed_item = FeedEntry.create_from_parsed_entry(entry)
             self.entries.append(feed_item)
         if self.filters:
@@ -131,7 +166,7 @@ class FeedEntry(object):
         self.update_date = kwargs.get("update_date")
 
     def __repr__(self):
-        return "<FeedEntry author='%s'>" % (self.author.encode('utf-8'))
+        return "<FeedEntry link='%s'>" % (self.link.encode('utf-8'))
 
     @classmethod
     def create_from_parsed_entry(cls, entry):

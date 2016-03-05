@@ -35,8 +35,12 @@ def get_feed(feed_id):
                                                                                   "rel":"alternate",
                                                                                   "type":"text/html"}])
     for entry in feed.entries:
-        feed_item = FeedEntry(id=entry.guid, title=entry.title, updated=entry.update_date,
+        title = entry.title
+        if not entry.title:
+            title = entry.link
+        feed_item = FeedEntry(id=entry.guid, title=title, updated=entry.update_date,
                               author=entry.author, published=entry.pub_date, links=[{"href":entry.link, "rel":"alternate", "type":"text/html"}])
+
         if entry.summary:
             feed_item.summary = unicode(entry.summary)
             feed_item.summary_type = "text" if entry.summary_type == "text/plain" else "html"

@@ -39,10 +39,10 @@ class FusedFeed(object):
         feeds = []
         with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
             future_feed = {executor.submit(mp_fetch, source): source for source in self.sources}
-            for future in concurrent.futures.as_completed(future_feed, timeout=10):
+            for future in concurrent.futures.as_completed(future_feed):
                 old_feed = future_feed[future]
                 try:
-                    new_feed = future.result()
+                    new_feed = future.result(timeout=10)
                 except Exception as exc:
                     print('%r generated an exception: %s' % (old_feed.uri, exc))
                 else:

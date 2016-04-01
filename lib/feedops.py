@@ -2,6 +2,7 @@ import json, itertools, collections, datetime
 import concurrent.futures
 import requests
 import feedparser
+import hashlib
 
 
 def mp_fetch(source):
@@ -114,7 +115,7 @@ class SourceFeed(object):
             #print r.request.headers
         except requests.exceptions.Timeout:
             return None
-        print "status", r.status_code
+        print self.uri, " status", r.status_code
         if 300 > r.status_code >= 200:
             print r.headers.get("etag")
             if r.text:
@@ -122,7 +123,7 @@ class SourceFeed(object):
                 self.raw = r.text
             if not parsed_feed or parsed_feed.get("bozo_exception"):
                 # can't parse whatever text is available, return nothing.
-                print "Failed to parse feed.  Returning nothing"
+                print self.uri, " failed to parse feed.  Returning nothing"
                 return None
         elif r.status_code == 304:
             if self.raw:
@@ -130,10 +131,10 @@ class SourceFeed(object):
                 parsed_feed = feedparser.parse(self.raw)
             else:
                 # we don't have cached text and the server 304s.  We shouldn't have used the ETag/Last-Modified; return with nothing
-                print "returning fail"
+                print self.uri, " returning fail"
                 return None
         else:
-            print "utter fail"
+            print self.uri, "utter fail"
             # a 400+ code (or a 30x redirect, which shouldn't happen)
             return None
         if r.headers.get('etag'):
@@ -144,7 +145,8 @@ class SourceFeed(object):
         self.html_uri = parsed_feed.feed.link
         for entry in parsed_feed.entries:
             feed_item = FeedEntry.create_from_parsed_entry(entry)
-            self.entries.append(feed_item)
+            if feed_item:
+                self.entries.append(feed_item)
         if self.filters:
             for fil in self.filters:
                 self.entries = fil.apply(self.entries)
@@ -185,6 +187,18 @@ class FeedEntry(object):
         if entry.get("content"):
             item.content_type = entry.content[0].type
             item.content = entry.content[0].value
+        if not item.guid:
+            item_stuff = ""
+            if item.title:
+                item_stuff += item.title
+            if item.content:
+                item_stuff += item.content
+            if item.summary:
+                item_stuff += item.summary
+            if item_stuff:
+                item.guid = hashlib.md5(item_stuff).hexdigest()
+            else:
+                return None # this can't possibly be a valid entry
         return item
 
 

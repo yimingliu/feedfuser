@@ -24,6 +24,8 @@ def get_feed(feed_id):
         print feed_config_filepath
         abort(404)
     feed = feedops.FusedFeed.load_from_spec_file(feed_config_filepath)
+    if not feed:
+        abort(400)
     feed.fetch()
     feed_uri = request.url_root
     if len(feed.sources) == 1:

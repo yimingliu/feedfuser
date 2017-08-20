@@ -115,16 +115,16 @@ class SourceFeed(object):
             #print r.request.headers
         except requests.exceptions.Timeout:
             return None
-        print self.uri, " status", r.status_code
+        # print self.uri, " status", r.status_code
         if 300 > r.status_code >= 200:
-            print r.headers.get("etag")
+            print("%s" % (r.headers.get("etag")))
             parsed_feed = None
             if r.text:
                 parsed_feed = feedparser.parse(r.text)
                 self.raw = r.text
             if not parsed_feed or parsed_feed.get("bozo_exception"):
                 # can't parse whatever text is available, return nothing.
-                print self.uri, " failed to parse feed.  Returning nothing"
+                print("%s %s" % (self.uri, " failed to parse feed.  Returning nothing"))
                 return None
         elif r.status_code == 304:
             if self.raw:
@@ -132,10 +132,10 @@ class SourceFeed(object):
                 parsed_feed = feedparser.parse(self.raw)
             else:
                 # we don't have cached text and the server 304s.  We shouldn't have used the ETag/Last-Modified; return with nothing
-                print self.uri, " returning fail"
+                print("%s %s" % (self.uri, "returning fail"))
                 return None
         else:
-            print self.uri, "utter fail"
+            print("%s %s" % (self.uri, "utter fail"))
             # a 400+ code (or a 30x redirect, which shouldn't happen)
             return None
         if r.headers.get('etag'):

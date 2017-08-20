@@ -21,7 +21,7 @@ def get_feed(feed_id):
     feed_id = secure_filename(feed_id)
     feed_config_filepath = os.path.join(APP_CONFIG_FEEDS, feed_id+".json")
     if not os.path.isfile(feed_config_filepath):
-        print feed_config_filepath
+        #print feed_config_filepath
         abort(404)
     feed = feedops.FusedFeed.load_from_spec_file(feed_config_filepath)
     if not feed:

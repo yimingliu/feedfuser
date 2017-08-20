@@ -118,6 +118,7 @@ class SourceFeed(object):
         print self.uri, " status", r.status_code
         if 300 > r.status_code >= 200:
             print r.headers.get("etag")
+            parsed_feed = None
             if r.text:
                 parsed_feed = feedparser.parse(r.text)
                 self.raw = r.text
@@ -230,6 +231,8 @@ class FeedFilter(object):
     def make_filter(cls, filter_type, mode, rules):
         if filter_type == "block":
             return FeedFilterBlock(mode=mode, rules=rules)
+        if filter_type == "allow":
+            return FeedFilterAllow(mode=mode, rules=rules)
         else:
             return FeedFilter(mode=mode, filter_type=filter_type, rules=rules)
 
@@ -258,6 +261,29 @@ class FeedFilterBlock(FeedFilter):
                         # one of the rules didn't match -- should not be excluded
                         results.append(entry)
                         break
+        return results
+
+class FeedFilterAllow(FeedFilter):
+
+    def __init__(self, mode, rules):
+        super(FeedFilterAllow, self).__init__(filter_type="allow", mode=mode, rules=rules)
+
+    def apply(self, entries):
+        results = []
+        for entry in entries:
+            if self.mode.lower() == "or":  # if an entry matches any of the rules, exclude it
+                for rule in self.rules:
+                    if rule.apply(entry):
+                        # one of the rules matched -- include it
+                        results.append(entry)
+                        break
+            elif self.mode.lower() == "and":  # entry must match against all rules to be excluded
+                for rule in self.rules:
+                    if not rule.apply(entry):
+                        # one of the rules didn't match -- exclude it
+                        break
+                else:
+                    results.append(entry)
         return results
 
 

@@ -50,9 +50,10 @@ The filename becomes the unique identifier for the feed.  The corresponding feed
 
     http://127.0.0.1:5000/feeds/test
     
-The definition file supports the use of filters, which acts upon entries in a feed.  The other sample file demonstrates the syntax for filter definitions.  Currently the only filter supported is "block", aka a blacklist, which excludes matching entries based on criteria set in the filter.  The only rule supported by the filter is "contains", or whether a field contains the substring given.
+The definition file supports the use of filters, which acts upon entries in a feed.  The other sample file demonstrates the syntax for filter definitions.  Currently the only filters supported are "block", aka a blacklist, which excludes matching entries based on criteria set in the filter, and "allow", which includes matching entries like a whitelist.  
 
-A future filter will be "permit", which would function as a whitelist instead, as well as additional rules like "startswith".
+The only rule supported by the filter is "contains", or whether a field contains the substring given.
+
 
 
 # Notes

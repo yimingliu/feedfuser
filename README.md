@@ -8,9 +8,8 @@ Currently, this only includes the use cases of:
 
 # Prerequisites
 
-Python 2.7
+Python 3.x
 
-* [futures](https://pypi.python.org/pypi/futures) -- the backport of concurrent.futures from Python 3
 * [requests](https://pypi.python.org/pypi/requests) -- HTTP library for human beings
 * [feedparser](https://pypi.python.org/pypi/feedparser) -- the definitive Python parser for all things feed-related
 * [flask](https://pypi.python.org/pypi/Flask) -- the sanest Python web framework
@@ -63,7 +62,7 @@ feed parsing operations are in lib/feedops.py.  Concatenated feeds will spin up 
 
 BSD license
 
-Copyright (c) 2015, Yiming Liu
+Copyright (c) 2015-2018, Yiming Liu
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:

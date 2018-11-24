@@ -26,7 +26,7 @@ class FusedFeed(object):
 
     @classmethod
     def load_from_spec_file(cls, spec_file_path):
-        data = json.load(open(spec_file_path, "rb"))
+        data = json.load(open(spec_file_path, "r"))
         if not data:
             return None
         name = data.get('name')
@@ -45,7 +45,7 @@ class FusedFeed(object):
                 try:
                     new_feed = future.result(timeout=10)
                 except Exception as exc:
-                    print('%r generated an exception: %s' % (old_feed.uri, exc))
+                    print(('%r generated an exception: %s' % (old_feed.uri, exc)))
                 else:
                     if new_feed:
                         feeds.append(new_feed)
@@ -84,7 +84,7 @@ class SourceFeed(object):
 
     @classmethod
     def load_from_list(cls, lst):
-        feeds = map(SourceFeed.load_from_definition, lst)
+        feeds = list(map(SourceFeed.load_from_definition, lst))
         return feeds
 
     @classmethod
@@ -117,14 +117,14 @@ class SourceFeed(object):
             return None
         # print self.uri, " status", r.status_code
         if 300 > r.status_code >= 200:
-            print("%s" % (r.headers.get("etag")))
+            print(("%s" % (r.headers.get("etag"))))
             parsed_feed = None
             if r.text:
                 parsed_feed = feedparser.parse(r.text)
                 self.raw = r.text
             if not parsed_feed or parsed_feed.get("bozo_exception"):
                 # can't parse whatever text is available, return nothing.
-                print("%s %s" % (self.uri, " failed to parse feed.  Returning nothing"))
+                print(("%s %s" % (self.uri, " failed to parse feed.  Returning nothing")))
                 return None
         elif r.status_code == 304:
             if self.raw:
@@ -132,10 +132,10 @@ class SourceFeed(object):
                 parsed_feed = feedparser.parse(self.raw)
             else:
                 # we don't have cached text and the server 304s.  We shouldn't have used the ETag/Last-Modified; return with nothing
-                print("%s %s" % (self.uri, "returning fail"))
+                print(("%s %s" % (self.uri, "returning fail")))
                 return None
         else:
-            print("%s %s" % (self.uri, "utter fail"))
+            print(("%s %s" % (self.uri, "utter fail")))
             # a 400+ code (or a 30x redirect, which shouldn't happen)
             return None
         if r.headers.get('etag'):
@@ -217,7 +217,7 @@ class FeedFilter(object):
 
     @classmethod
     def load_from_list(cls, lst):
-        filters = map(FeedFilter.load_from_definition, lst)
+        filters = list(map(FeedFilter.load_from_definition, lst))
         return filters
 
     @classmethod
@@ -302,7 +302,7 @@ class FeedFilterRule(object):
 
     @classmethod
     def load_from_list(cls, lst):
-        rules = map(FeedFilterRule.load_from_definition, lst)
+        rules = list(map(FeedFilterRule.load_from_definition, lst))
         return rules
 
     @classmethod

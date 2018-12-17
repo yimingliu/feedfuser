@@ -29,7 +29,7 @@ If used on macOS, it is possible to run into a python [multiprocessing crash](ht
 
 For deployment, see [Flask deployment](http://flask.pocoo.org/docs/0.10/deploying/)
 
-Included is a passenger_wsgi.py file for use with Phusion Passenger's Python support.  Just need to change the second line to the python interpreter being used under virtualenv (you are using virtualenv, aren't you?)
+Included is a `passenger_wsgi.py` file for use with Phusion Passenger's Python support.  Just need to change the second line to the python interpreter being used under virtualenv (you are using virtualenv, aren't you?)
 
 # Usage
 
@@ -58,7 +58,7 @@ The definition file supports the use of filters, which acts upon entries in a fe
 
 The two rules supported by the filter are:
 - "contains" -- whether a field contains the substring given
-- "xpath" -- any valid XPath expression.  This assumes the field being processed is a valid HTML/XML fragment.
+- "xpath" -- any valid XPath 1.0 expression (currently the only kind of XPath supported by `parsel`).  This assumes the field being processed is a sufficiently well-formed HTML/XML fragment that can be parsed by `parsel`
 
 
 # Notes

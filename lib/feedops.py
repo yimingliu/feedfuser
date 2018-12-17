@@ -15,6 +15,10 @@ def tm_struct_to_datetime(t):
     return datetime.datetime(*t[:5]+(min(t[5], 59),))  # this is a hack to convert leap seconds into 59th second instead
 
 
+def all_subclasses(cls):
+    return set(cls.__subclasses__()).union(
+        [s for c in cls.__subclasses__() for s in all_subclasses(c)])
+
 class FusedFeed(object):
 
     def __init__(self, name, sources, filters=None):
@@ -209,6 +213,8 @@ class FeedEntry(object):
 
 class FeedFilter(object):
 
+    name = "default"
+
     def __init__(self, mode, filter_type, rules):
         self.mode = mode
         self.filter_type = filter_type
@@ -233,10 +239,10 @@ class FeedFilter(object):
 
     @classmethod
     def make_filter(cls, filter_type, mode, rules):
-        if filter_type == "block":
-            return FeedFilterBlock(mode=mode, rules=rules)
-        if filter_type == "allow":
-            return FeedFilterAllow(mode=mode, rules=rules)
+        filter_classes = all_subclasses(cls)
+        filter_class = next(x for x in filter_classes if x.name == filter_type)
+        if filter_class:
+            return filter_class(mode=mode, rules=rules)
         else:
             return FeedFilter(mode=mode, filter_type=filter_type, rules=rules)
 
@@ -246,8 +252,10 @@ class FeedFilter(object):
 
 class FeedFilterBlock(FeedFilter):
 
+    name = "block"
+
     def __init__(self, mode, rules):
-        super(FeedFilterBlock, self).__init__(filter_type="block", mode=mode, rules=rules)
+        super(FeedFilterBlock, self).__init__(filter_type=self.__class__.name, mode=mode, rules=rules)
 
     def apply(self, entries):
         results = []
@@ -269,8 +277,10 @@ class FeedFilterBlock(FeedFilter):
 
 class FeedFilterAllow(FeedFilter):
 
+    name = "allow"
+
     def __init__(self, mode, rules):
-        super(FeedFilterAllow, self).__init__(filter_type="allow", mode=mode, rules=rules)
+        super(FeedFilterAllow, self).__init__(filter_type=self.__class__.name, mode=mode, rules=rules)
 
     def apply(self, entries):
         results = []
@@ -320,7 +330,7 @@ class FeedFilterRule(object):
 
     @classmethod
     def make_rule(cls, op, field, value):
-        rule_classes = cls.__subclasses__()
+        rule_classes = all_subclasses(cls)
         rule_class = next(x for x in rule_classes if x.name == op)
         if rule_class:
             return rule_class(field=field, value=value)

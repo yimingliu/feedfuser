@@ -3,6 +3,7 @@ import concurrent.futures
 import requests
 import feedparser
 import hashlib
+import parsel
 
 
 def mp_fetch(source):
@@ -73,6 +74,7 @@ class SourceFeed(object):
         self.password = kwargs.get("password")
         self.headers = kwargs.get("headers", {})
         self.filters = kwargs.get("filters", [])
+        self.user_agent = kwargs.get("user_agent")
         self.parsed = None
         self.entries = []
         self.etag = None
@@ -104,6 +106,8 @@ class SourceFeed(object):
         args = {'timeout': timeout}
         if self.username and self.password:
             args['auth'] = (self.username, self.password)
+        if self.user_agent:
+            args['User-Agent'] = self.user_agent
         args['headers'] = self.headers
         if self.etag:
             args['headers']['If-None-Match'] = self.etag
@@ -289,6 +293,8 @@ class FeedFilterAllow(FeedFilter):
 
 class FeedFilterRule(object):
 
+    name = "default"
+
     def __init__(self, op, field, value):
         self.op = op
         self.field = field
@@ -314,8 +320,10 @@ class FeedFilterRule(object):
 
     @classmethod
     def make_rule(cls, op, field, value):
-        if op.lower() == "contains":
-            return FeedFilterRuleContains(field=field, value=value)
+        rule_classes = cls.__subclasses__()
+        rule_class = next(x for x in rule_classes if x.name == op)
+        if rule_class:
+            return rule_class(field=field, value=value)
         else:
             return FeedFilterRule(op=op, field=field, value=value)
 
@@ -325,8 +333,10 @@ class FeedFilterRule(object):
 
 class FeedFilterRuleContains(FeedFilterRule):
 
+    name = "contains"
+
     def __init__(self, field, value):
-        super(FeedFilterRuleContains, self).__init__(op="contains", field=field, value=value)
+        super(FeedFilterRuleContains, self).__init__(op=self.__class__.name, field=field, value=value)
 
     def apply(self, entry):
         if hasattr(entry, self.field) and self.value:
@@ -335,3 +345,20 @@ class FeedFilterRuleContains(FeedFilterRule):
                 return True
         return False
 
+
+class FeedFilterRuleXPath(FeedFilterRule):
+
+    name = "xpath"
+
+    def __init__(self, field, value):
+        super(FeedFilterRuleXPath, self).__init__(op=self.__class__.name, field=field, value=value)
+
+    def apply(self, entry):
+        if hasattr(entry, self.field) and self.value:
+            text = getattr(entry, self.field)
+            if not text:
+                return False
+            selector = parsel.Selector(text)
+            if (selector.xpath(self.value)):
+                return True
+        return False

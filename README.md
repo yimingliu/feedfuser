@@ -13,6 +13,7 @@ Python 3.x
 * [requests](https://pypi.python.org/pypi/requests) -- HTTP library for human beings
 * [feedparser](https://pypi.python.org/pypi/feedparser) -- the definitive Python parser for all things feed-related
 * [flask](https://pypi.python.org/pypi/Flask) -- the sanest Python web framework
+* [parsel](https://github.com/scrapy/parsel) -- XPath parsing
 
 I really should put together a pip package at some point.
 
@@ -21,6 +22,10 @@ I really should put together a pip package at some point.
 Git clone this repo somewhere.  For development, run the standard Flask server:
 
     python feedfuser.py
+    
+If used on macOS, it is possible to run into a python [multiprocessing crash](https://blog.yimingliu.com/2015/07/22/python-multiprocessing-code-crashes-on-os-x-under-ipython/) bug.  If this happens, run instead with:
+
+    env no_proxy='*' python feedfuser.py
 
 For deployment, see [Flask deployment](http://flask.pocoo.org/docs/0.10/deploying/)
 
@@ -51,8 +56,9 @@ The filename becomes the unique identifier for the feed.  The corresponding feed
     
 The definition file supports the use of filters, which acts upon entries in a feed.  The other sample file demonstrates the syntax for filter definitions.  Currently the only filters supported are "block", aka a blacklist, which excludes matching entries based on criteria set in the filter, and "allow", which includes matching entries like a whitelist.  
 
-The only rule supported by the filter is "contains", or whether a field contains the substring given.
-
+The two rules supported by the filter are:
+- "contains" -- whether a field contains the substring given
+- "xpath" -- any valid XPath expression.  This assumes the field being processed is a valid HTML/XML fragment.
 
 
 # Notes
@@ -62,7 +68,7 @@ feed parsing operations are in lib/feedops.py.  Concatenated feeds will spin up 
 
 BSD license
 
-Copyright (c) 2015-2018, Yiming Liu
+Copyright (c) 2015-2019, Yiming Liu
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:

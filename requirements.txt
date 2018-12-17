@@ -5,6 +5,7 @@
 flask
 requests
 feedparser
+parsel
 
 #
 ###### Requirements with Version Specifiers ######

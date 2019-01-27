@@ -42,10 +42,13 @@ def get_feed(feed_id):
         title = entry.title
         if not entry.title:
             title = entry.link
+        links = [{"href": entry.link, "rel": "alternate","type": "text/html"}]
+        if entry.enclosures:
+            for enclosure in entry.enclosures:
+                if enclosure.get("href"):
+                    links.append({"rel":"enclosure", "href":enclosure.get("href"), "type":enclosure.get("type", ""), "length":enclosure.get("length", 0)})
         feed_item = FeedEntry(id=entry.guid, title=title, updated=entry.update_date,
-                              author=entry.author, published=entry.pub_date, links=[{"href": entry.link,
-                                                                                     "rel": "alternate",
-                                                                                     "type": "text/html"}])
+                              author=entry.author, published=entry.pub_date, links=links)
 
         if entry.summary:
             feed_item.summary = entry.summary

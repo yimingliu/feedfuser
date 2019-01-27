@@ -175,6 +175,7 @@ class FeedEntry(object):
         self.link = kwargs.get("link")
         self.pub_date = kwargs.get("pub_date")
         self.update_date = kwargs.get("update_date")
+        self.enclosures = kwargs.get("enclosures")
 
     def __repr__(self):
         return "<FeedEntry link='%s'>" % (self.link.encode('utf-8'))
@@ -196,6 +197,8 @@ class FeedEntry(object):
         if entry.get("content"):
             item.content_type = entry.content[0].type
             item.content = entry.content[0].value
+        if entry.get("enclosures"):
+            item.enclosures = entry.enclosures
         if not item.guid:
             item_stuff = ""
             if item.title:

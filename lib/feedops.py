@@ -11,11 +11,6 @@ def mp_fetch(source):
     # wrapper: multiprocessing does not like classes and class methods. top-level only
     return source.fetch()
 
-
-def tm_struct_to_datetime(t):
-    return datetime.datetime(*t[:5]+(min(t[5], 59),))  # this is a hack to convert leap seconds into 59th second instead
-
-
 def all_subclasses(cls):
     return set(cls.__subclasses__()).union(
         [s for c in cls.__subclasses__() for s in all_subclasses(c)])
@@ -119,12 +114,9 @@ class SourceFeed(object):
         if self.last_modified:
             args['headers']['If-Modified-Since'] = self.last_modified
         try:
-            #print args
             r = requests.get(self.uri, **args)
-            #print r.request.headers
         except requests.exceptions.Timeout:
             return None
-        # print self.uri, " status", r.status_code
         if 300 > r.status_code >= 200:
             #print(("%s" % (r.headers.get("etag"))))
             parsed_feed = None

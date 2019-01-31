@@ -72,8 +72,11 @@ The two rules supported by the filter are:
 - "xpath" -- any valid XPath 1.0 expression (currently the only kind of XPath supported by `parsel`).  This assumes the field being processed is a sufficiently well-formed HTML/XML fragment that can be parsed by `parsel`
 
 
-# Notes
-feed parsing operations are in lib/feedops.py.  Concatenated feeds will spin up multiple processes to download all component feeds  in parallel.  As a result, this server is not production ready (if that wasn't obvious already from all the unimplemented parts).
+# Other Notes
+
+Feed parsing rules and filters are in lib/feedops.py.  
+
+Concatenated feeds will spin up multiple processes to download all component feeds  in parallel, which may be a lot of processes.
 
 # LICENSE
 

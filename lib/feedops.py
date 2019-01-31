@@ -4,6 +4,7 @@ import requests
 import feedparser
 import hashlib
 import parsel
+from dateutil import parser
 
 
 def mp_fetch(source):
@@ -125,7 +126,7 @@ class SourceFeed(object):
             return None
         # print self.uri, " status", r.status_code
         if 300 > r.status_code >= 200:
-            print(("%s" % (r.headers.get("etag"))))
+            #print(("%s" % (r.headers.get("etag"))))
             parsed_feed = None
             if r.text:
                 parsed_feed = feedparser.parse(r.text)
@@ -183,14 +184,17 @@ class FeedEntry(object):
     @classmethod
     def create_from_parsed_entry(cls, entry):
         item = cls(guid=entry.guid, title=entry.get("title"), author=entry.get("author"), link=entry.get("link"))
-        item.pub_date = entry.get("published_parsed")
+        item.pub_date = entry.get("published")
         if item.pub_date:
-            item.pub_date = tm_struct_to_datetime(item.pub_date)
-        item.update_date = entry.get("updated_parsed")
+            item.pub_date = parser.parse(item.pub_date)
+        item.update_date = entry.get("updated")
         if item.update_date:
-            item.update_date = tm_struct_to_datetime(item.update_date)
-        if not item.update_date:
-            item.update_date = datetime.datetime.now()
+            item.update_date = parser.parse(item.update_date)
+        else:
+            if item.pub_date:
+                item.update_date = item.pub_date
+            else:
+                item.update_date = datetime.datetime.now(datetime.timezone.utc)
         if entry.get("summary_detail"):
             item.summary_type = entry.summary_detail.type
             item.summary = entry.summary

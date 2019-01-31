@@ -6,6 +6,7 @@ flask
 requests
 feedparser
 parsel
+feedgen
 
 #
 ###### Requirements with Version Specifiers ######

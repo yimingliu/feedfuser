@@ -2,7 +2,7 @@
 
 Currently, this only includes the use cases of:
 
-*  concatenating multiple RSS and Atom feeds, sorting all of the entries together reverse-chronologically, and outputting common-denominator elements as a combined Atom feed
+*  concatenating multiple RSS and Atom feeds, sorting all of the entries together reverse-chronologically, and outputting common-denominator elements as a combined Atom or RSS 2.0 feed
 *  filtering away certain entries based on text within entry fields, such as the name of an entry's author
 
 
@@ -11,15 +11,22 @@ Currently, this only includes the use cases of:
 Python 3.x
 
 * [requests](https://pypi.python.org/pypi/requests) -- HTTP library for human beings
-* [feedparser](https://pypi.python.org/pypi/feedparser) -- the definitive Python parser for all things feed-related
 * [flask](https://pypi.python.org/pypi/Flask) -- the sanest Python web framework
+* [python-feedgen](https://github.com/lkiesow/python-feedgen) -- replaces the deprecated AtomFeed component in Flask
+* [feedparser](https://pypi.python.org/pypi/feedparser) -- the definitive Python parser for all things feed-related
 * [parsel](https://github.com/scrapy/parsel) -- XPath parsing
 
 I really should put together a pip package at some point.
 
 # Installation
 
-Git clone this repo somewhere.  For development, run the standard Flask server:
+Git clone this repo somewhere.  
+
+Install the prerequisites via 
+
+    pip install -r requirements.txt
+
+For development, run the standard Flask server:
 
     python feedfuser.py
     
@@ -50,9 +57,13 @@ In the simplest case (concatenating multiple feeds), a listing of URIs in source
 
     }
 
-The filename becomes the unique identifier for the feed.  The corresponding feed for test.json can be accessed from:
+The filename becomes the unique identifier for the feed.  The corresponding Atom feed for test.json can be accessed from:
 
     http://127.0.0.1:5000/feeds/test
+    
+The corresponding RSS 2.0 feed is available from:
+
+    http://127.0.0.1:5000/feeds/test/rss
     
 The definition file supports the use of filters, which acts upon entries in a feed.  The other sample file demonstrates the syntax for filter definitions.  Currently the only filters supported are "block", aka a blacklist, which excludes matching entries based on criteria set in the filter, and "allow", which includes matching entries like a whitelist.  
 

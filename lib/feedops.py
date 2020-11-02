@@ -11,9 +11,11 @@ def mp_fetch(source):
     # wrapper: multiprocessing does not like classes and class methods. top-level only
     return source.fetch()
 
+
 def all_subclasses(cls):
     return set(cls.__subclasses__()).union(
         [s for c in cls.__subclasses__() for s in all_subclasses(c)])
+
 
 class FusedFeed(object):
 
@@ -34,7 +36,8 @@ class FusedFeed(object):
         sources = data.get('sources')
         if sources:
             sources = SourceFeed.load_from_list(sources)
-        filters = data.get('filters')
+        if data.get('filters'):
+            filters = FeedFilter.load_from_list(data.get("filters"))
         return cls(name=name, sources=sources, filters=filters)
 
     def fetch(self, max_workers=5):
@@ -57,6 +60,9 @@ class FusedFeed(object):
     def entries(self):
         combined = [source.entries for source in self.sources]
         entries = list(itertools.chain.from_iterable(combined))
+        if self.filters:
+            for fil in self.filters:
+                entries = fil.apply(entries)
         entries.sort(key=lambda entry: entry.update_date, reverse=True)
         return entries
 

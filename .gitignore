@@ -1,3 +1,4 @@
 config/feeds/*.json
 !config/feeds/test.json
 .idea
+.venv

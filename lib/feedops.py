@@ -1,7 +1,7 @@
 import json, itertools, collections, datetime
 import concurrent.futures
 import requests
-import feedparser
+from lib import feedparser
 import hashlib
 import parsel
 from dateutil import parser

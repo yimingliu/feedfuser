@@ -1,4 +1,5 @@
-import json, itertools, collections, datetime
+import json, itertools, datetime
+import collections, collections.abc
 import concurrent.futures
 import requests
 from lib import feedparser
@@ -97,7 +98,7 @@ class SourceFeed(object):
 
     @classmethod
     def load_from_definition(cls, item):
-        if isinstance(item, collections.Mapping):
+        if isinstance(item, collections.abc.Mapping):
             uri = item.get("uri")
             filters = []
             if item.get("filters"):

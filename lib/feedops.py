@@ -30,6 +30,7 @@ class FusedFeed(object):
 
     @classmethod
     def load_from_spec_file(cls, spec_file_path):
+        filters = None
         data = json.load(open(spec_file_path, "r"))
         if not data:
             return None

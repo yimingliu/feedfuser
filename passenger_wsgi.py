@@ -1,5 +1,5 @@
 import sys, os
-INTERP = "/home/serrana/.pyenvs/feedfuser/bin/python"
+INTERP = os.getenv('APP_INTERPRETER')
 if sys.executable != INTERP: os.execl(INTERP, INTERP, *sys.argv)
 
 from feedfuser import app as application

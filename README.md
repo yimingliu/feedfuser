@@ -36,7 +36,14 @@ If used on macOS, it is possible to run into a python [multiprocessing crash](ht
 
 For deployment, see [Flask deployment](http://flask.pocoo.org/docs/0.10/deploying/)
 
-Included is a `passenger_wsgi.py` file for use with Phusion Passenger's Python support.  Just need to change the second line to the python interpreter being used under virtualenv (you are using virtualenv, aren't you?)
+Included is a `passenger_wsgi.py` file for use with Phusion Passenger's Python support.  Set the `APP_INTERPRETER` environment variable to the python interpreter being used under virtualenv (you are using virtualenv, aren't you?); the app will not start without it.
+
+# Tests
+
+The tests run offline against canned feeds:
+
+    pip install -r requirements-dev.txt
+    python -m pytest
 
 # Usage
 

@@ -2,10 +2,24 @@ import json, itertools, datetime
 import collections, collections.abc
 import concurrent.futures
 import requests
-from lib import feedparser
+import feedparser
 import hashlib
 import parsel
 from dateutil import parser
+from feedparser.mixin import _FeedParserMixin
+
+# RSS guids default to isPermaLink="true", so feedparser resolves them as URLs once it has a base URI,
+# rewriting ids like "thread-123" into "https://site/thread-123". Keep ids opaque.
+assert "id" in _FeedParserMixin.can_be_relative_uri
+_FeedParserMixin.can_be_relative_uri = _FeedParserMixin.can_be_relative_uri - {"id"}
+
+
+def parse_feed(text, base_uri):
+    # feedparser's sanitizer strips iframes, data-* attributes and some inline styles; pass source HTML through as-is.
+    # A string carries no URL, so content-location supplies the base for relative links. Once any response header
+    # is given, feedparser flags a missing content-type as bozo, so one has to be supplied as well.
+    headers = {"content-location": base_uri, "content-type": "application/xml"}
+    return feedparser.parse(text, sanitize_html=False, resolve_relative_uris=True, response_headers=headers)
 
 
 def mp_fetch(source):
@@ -31,7 +45,8 @@ class FusedFeed(object):
     @classmethod
     def load_from_spec_file(cls, spec_file_path):
         filters = None
-        data = json.load(open(spec_file_path, "r"))
+        with open(spec_file_path, "r") as spec_file:
+            data = json.load(spec_file)
         if not data:
             return None
         name = data.get('name')
@@ -129,7 +144,7 @@ class SourceFeed(object):
             #print(("%s" % (r.headers.get("etag"))))
             parsed_feed = None
             if r.text:
-                parsed_feed = feedparser.parse(r.text)
+                parsed_feed = parse_feed(r.text, r.url)
                 self.raw = r.text
             if not parsed_feed or parsed_feed.get("bozo_exception"):
                 # can't parse whatever text is available, return nothing.
@@ -138,7 +153,7 @@ class SourceFeed(object):
         elif r.status_code == 304:
             if self.raw:
                 # assume that if we already have text that this is reusing a cached object; just reparse the old text
-                parsed_feed = feedparser.parse(self.raw)
+                parsed_feed = parse_feed(self.raw, r.url)
             else:
                 # we don't have cached text and the server 304s.  We shouldn't have used the ETag/Last-Modified; return with nothing
                 print(("%s %s" % (self.uri, "returning fail")))
@@ -183,11 +198,11 @@ class FeedEntry(object):
 
     @classmethod
     def create_from_parsed_entry(cls, entry):
-        item = cls(guid=entry.guid, title=entry.get("title"), author=entry.get("author"), link=entry.get("link"))
+        item = cls(guid=entry.get("guid"), title=entry.get("title"), author=entry.get("author"), link=entry.get("link"))
         item.pub_date = entry.get("published")
         if item.pub_date:
             item.pub_date = parser.parse(item.pub_date)
-        item.update_date = entry.get("updated")
+        item.update_date = entry["updated"] if "updated" in entry else None
         if item.update_date:
             item.update_date = parser.parse(item.update_date)
         else:
@@ -212,7 +227,7 @@ class FeedEntry(object):
             if item.summary:
                 item_stuff += item.summary
             if item_stuff:
-                item.guid = hashlib.md5(item_stuff).hexdigest()
+                item.guid = hashlib.md5(item_stuff.encode("utf-8")).hexdigest()
             else:
                 return None # this can't possibly be a valid entry
         return item
@@ -358,7 +373,7 @@ class FeedFilterRuleContains(FeedFilterRule):
     def apply(self, entry):
         if hasattr(entry, self.field) and self.value:
             text = getattr(entry, self.field)
-            if text.find(self.value) != -1:
+            if text and text.find(self.value) != -1:
                 return True
         return False
 

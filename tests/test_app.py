@@ -5,6 +5,7 @@ import sys
 
 import feedparser
 import pytest
+import requests
 
 import feedfuser
 from tests.samples import ATOM, RSS
@@ -57,6 +58,30 @@ def test_single_source_feed_links_to_source_site(client):
 @pytest.mark.parametrize("path", ["/feeds/missing", "/feeds/..%2Fboth", "/feeds/missing/rss"])
 def test_unknown_feed_is_404(client, path):
     assert client.get(path).status_code == 404
+
+
+def write_feed(client, tmp_path, name, sources):
+    (tmp_path / (name + ".json")).write_text(json.dumps({"name": name, "sources": sources}))
+
+
+@pytest.mark.parametrize("path", ["/feeds/dead", "/feeds/dead/rss"])
+def test_feed_with_all_sources_failing_is_502(client, tmp_path, web, path):
+    web.add("https://example.net/blocked.xml", "nope", status_code=403)
+    web.fail("https://example.net/down.xml", requests.exceptions.SSLError("bad cert"))
+    write_feed(client, tmp_path, "dead", ["https://example.net/blocked.xml", "https://example.net/down.xml"])
+    assert client.get(path).status_code == 502
+
+
+def test_feed_with_some_sources_failing_still_serves_the_rest(client, tmp_path, web):
+    web.add("https://example.net/blocked.xml", "nope", status_code=403)
+    write_feed(client, tmp_path, "partial", ["https://example.net/blocked.xml", "https://example.org/atom.xml"])
+    assert [e.title for e in read_back(client.get("/feeds/partial")).entries] == ["Atom entry"]
+
+
+def test_feed_emptied_by_filters_is_still_200(client, tmp_path):
+    block_all = {"mode": "OR", "type": "block", "rules": [{"op": "contains", "field": "title", "value": "Atom"}]}
+    write_feed(client, tmp_path, "filtered", [{"uri": "https://example.org/atom.xml", "filters": [block_all]}])
+    assert read_back(client.get("/feeds/filtered")).entries == []
 
 
 def run_python(code, **env):

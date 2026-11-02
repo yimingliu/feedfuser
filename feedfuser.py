@@ -39,6 +39,9 @@ def make_feed(feed_id, request):
     if not feed:
         abort(400)
     feed.fetch()
+    if not feed.sources:
+        # fetch() keeps only the sources that succeeded; with none left there is nothing to serve
+        abort(502)
     feed_uri = request.url_root
     if len(feed.sources) == 1:
         # if there is only 1 source in a fusedfeed

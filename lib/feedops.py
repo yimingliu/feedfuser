@@ -1,6 +1,7 @@
 import json, itertools, datetime
 import collections, collections.abc
 import concurrent.futures
+import multiprocessing
 import requests
 import feedparser
 import hashlib
@@ -12,6 +13,8 @@ from feedparser.mixin import _FeedParserMixin
 # rewriting ids like "thread-123" into "https://site/thread-123". Keep ids opaque.
 assert "id" in _FeedParserMixin.can_be_relative_uri
 _FeedParserMixin.can_be_relative_uri = _FeedParserMixin.can_be_relative_uri - {"id"}
+
+multiprocessing.set_forkserver_preload(["lib.feedops"])
 
 
 def parse_feed(text, base_uri):
